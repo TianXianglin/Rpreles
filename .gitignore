@@ -52,3 +52,4 @@ vignettes/*.pdf
 *.dSYM/
 
 *~
+.Rproj.user

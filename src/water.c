@@ -175,7 +175,12 @@ void swbalance(double *theta, double throughfall, double snowmelt, double et,
 
   /* Water balance without drainage */
   st0 = *theta + throughfall + snowmelt  - et;
-  if (st0 <= 0) st0 = 0.0001;
+  if (sitepar.MinASWC>0.0001){
+    if (st0 <= sitepar.soildepth*(sitepar.MinASWC +sitepar.ThetaPWP)) st0 = sitepar.soildepth*(sitepar.MinASWC+sitepar.ThetaPWP);
+  }else{
+    if (st0 <= 0) st0 = 0.0001;
+  }
+
 
   /* Calculate what is left to drainage after partial balance update above: */
   if (sitepar.tauDrainage > 0) {  

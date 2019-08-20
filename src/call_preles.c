@@ -65,6 +65,7 @@ void call_preles(// INPUTS
 		 double *soildepth, 
 		 double *ThetaFC, 
 		 double *ThetaPWP, 
+		 double *MinASWC,
 		 double *tauDrainage, 
 		 double *beta, // START GPP PARAMETERS
 		 double *tau, 
@@ -123,6 +124,7 @@ void call_preles(// INPUTS
   parSite.soildepth = *soildepth;
   parSite.ThetaFC = *ThetaFC;
   parSite.ThetaPWP = *ThetaPWP;
+  parSite.MinASWC = *MinASWC;
   parSite.tauDrainage = *tauDrainage;
   parGPP.beta = *beta; 
   parGPP.tau = *tau;

@@ -39,6 +39,7 @@ PRELES = function(PAR, TAir, VPD, Precip, CO2, fAPAR, ## REQUIRED
         defaults = c(413.0, ## 1 soildepth
             0.450, ## 2 ThetaFC
             0.118, ## 3 ThetaPWP
+            0.00,## 3.1 MinASWC
             3, ## 4 tauDrainage
             ## GPP_MODEL_PARAMETERS
             0.7457, ## 5 betaGPP
@@ -74,7 +75,7 @@ PRELES = function(PAR, TAir, VPD, Precip, CO2, fAPAR, ## REQUIRED
     
     if (control == 1) ## Peltoniemi et al., 2015, Boreal Env. Res. for Hyytiala
         defaults = c(413.0, 
-            0.450, 0.118, 3, 0.748464, 12.74915, -3.566967, 18.4513, -0.136732,
+            0.450, 0.118,0, 3, 0.748464, 12.74915, -3.566967, 18.4513, -0.136732,
             0.033942, 0.448975, 0.500, -0.364, 0.33271, 0.857291, 0.041781,
             0.474173, 0.278332, 1.5, 0.33, 4.824704, 0, 0, 180, 0, 0, 10,
             -999, -999, -999) 
@@ -113,32 +114,34 @@ PRELES = function(PAR, TAir, VPD, Precip, CO2, fAPAR, ## REQUIRED
             p2=as.double(p[2]), 
             p3=as.double(p[3]), 
             p4=as.double(p[4]), 
-            p5=as.double(p[5]), ## START GPP PARAMETERS
-            p6=as.double(p[6]), 
+            p5=as.double(p[5]), 
+            p6=as.double(p[6]), ## START GPP PARAMETERS
             p7=as.double(p[7]),
             p8=as.double(p[8]),
             p9=as.double(p[9]),
             p10=as.double(p[10]),
-            p11=as.double(p[11]), ## used for fW with ETmodel = 2 | 4 | 6
-            p12=as.double(p[12]), ## used for fW with ETmodel = 1 | 3 | 5
-            p13=as.double(p[13]), ## used for fW with ETmodel = 1 | 3 | 5)  ;
-            p14=as.double(p[14]), ## START ET PARAMETERS
-            p15=as.double(p[15]), 
+            p11=as.double(p[11]), 
+            p12=as.double(p[12]), ## used for fW with ETmodel = 2 | 4 | 6
+            p13=as.double(p[13]), ## used for fW with ETmodel = 1 | 3 | 5
+            p14=as.double(p[14]), ## used for fW with ETmodel = 1 | 3 | 5)  ;
+            p15=as.double(p[15]), ## START ET PARAMETERS
             p16=as.double(p[16]), 
-            p17=as.double(p[17]), ## used for fW with ETmodel = 2 | 4
-            p18=as.double(p[18]), ## used for fW with ETmodel = 1 | 3 
-            p19=as.double(p[19]), ## START WATER/SNOW PARAMETERS
-            p20=as.double(p[20]), 
+            p17=as.double(p[17]), 
+            p18=as.double(p[18]), ## used for fW with ETmodel = 2 | 4
+            p19=as.double(p[19]), ## used for fW with ETmodel = 1 | 3 
+            p20=as.double(p[20]), ## START WATER/SNOW PARAMETERS
             p21=as.double(p[21]),
             p22=as.double(p[22]), 
             p23=as.double(p[23]), 
-            p24=as.double(p[24]), ## START INITIALISATION PARAMETERS // Soilw water at beginning
-            p25=as.double(p[25]), ## Canopy water
-            p26=as.double(p[26]), ## Snow on Ground 
-            p27=as.double(p[27]), ## State of temperature acclimation
-          p28=as.double(p[28]), ## Canopy water
-            p29=as.double(p[29]), ## Snow on Ground 
-            p30=as.double(p[30]), ## State of temperature acclimation
+            p24=as.double(p[24]), 
+            p25=as.double(p[25]), ## START INITIALISATION PARAMETERS // Soilw water at beginning
+            p26=as.double(p[26]), ## Canopy water
+            p27=as.double(p[27]), ## Snow on Ground 
+          p28=as.double(p[28]), ## State of temperature acclimation
+            p29=as.double(p[29]),## Canopy water
+            p30=as.double(p[30]), ## Snow on Ground 
+            p31=as.double(p[31]),
+       ## State of temperature acclimation
           etmodel=as.integer(control), ## useMeasurement, int *LOGFLAG, int *multisiteNday, int *NofDays
             LOGFLAG=as.integer(LOGFLAG),
             len=as.integer(len),

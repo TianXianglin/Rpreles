@@ -21,7 +21,8 @@ int vectorlength;
 typedef struct p1 {  
   double soildepth; 
   double ThetaFC;  
-  double ThetaPWP;  
+  double ThetaPWP; 
+  double MinASWC;  
   double tauDrainage;
 } p1 ;
 
@@ -49,6 +50,7 @@ typedef struct p3 {
   double chi;
   double soilthres; // used for fW with ETmodel = 2 | 4
   double nu; 
+
 } p3 ;
 
 // Rain and Snow models: interception and melting of snow 
