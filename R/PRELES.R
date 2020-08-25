@@ -1,6 +1,6 @@
 PRELES = function(PAR, TAir, VPD, Precip, CO2, fAPAR, ## REQUIRED
     GPPmeas=NA, ETmeas=NA, SWmeas=NA, ## OPTIONAL FOR BYPASSING PREDICTION
-    p = rep(NA, 30), ## PARAMETER VECTOR. NA parameters replaced with defaults.
+    p = rep(NA, 32), ## PARAMETER VECTOR. NA parameters replaced with defaults.
     DOY=NA, ## Needed for deciduous phenology (and if radmodel != 0), otherwise assume simulation
     ## starting DOY=1, and continuing  all years having 365 days
     ## Irrelevant if fPheno-parameters are -999 (default, used for conifers)
@@ -39,7 +39,9 @@ PRELES = function(PAR, TAir, VPD, Precip, CO2, fAPAR, ## REQUIRED
         defaults = c(413.0, ## 1 soildepth
             0.450, ## 2 ThetaFC
             0.118, ## 3 ThetaPWP
-            0.00,## 3.1 MinASWC
+            # 0.00,## 3.1 MinASWC
+            0.001,## 3.1 Reva
+            60,## 3.2 NdayW
             3, ## 4 tauDrainage
             ## GPP_MODEL_PARAMETERS
             0.7457, ## 5 betaGPP
@@ -75,22 +77,22 @@ PRELES = function(PAR, TAir, VPD, Precip, CO2, fAPAR, ## REQUIRED
     
     if (control == 1) ## Peltoniemi et al., 2015, Boreal Env. Res. for Hyytiala
         defaults = c(413.0, 
-            0.450, 0.118,0, 3, 0.748464, 12.74915, -3.566967, 18.4513, -0.136732,
+            0.450, 0.118,0.001,60, 3, 0.748464, 12.74915, -3.566967, 18.4513, -0.136732,
             0.033942, 0.448975, 0.500, -0.364, 0.33271, 0.857291, 0.041781,
             0.474173, 0.278332, 1.5, 0.33, 4.824704, 0, 0, 180, 0, 0, 10,
             -999, -999, -999) 
     p[is.na(p)] = defaults[is.na(p)] ## Note: this may slow down a bit when looping MCMC
 
     ## DOY is needed for other than conifers. Phenology model requires parameters:
-    ## tip: p[28:30] <- c(57, 1.5, 134) # Phenol. mod. (Linkosalo et al. 2008) 
+    ## tip: p[30:32] <- c(57, 1.5, 134) # Phenol. mod. (Linkosalo et al. 2008) 
     if (pft != "evergreen") {
         stopifnot(all(!is.na(DOY)))
-        stopifnot(all(!is.na(p[28:30])))
+        stopifnot(all(!is.na(p[30:32])))
     }
     ## There is no phenology of shoot growth for conifers presently
     if (pft == "evergreen") {
-        if (any(is.na(p[28:30]))) warning('Phenology parameters given, but not implemented in the model for conifers.')
-        p[28] = -999
+        if (any(is.na(p[30:32]))) warning('Phenology parameters given, but not implemented in the model for conifers.')
+        p[30] = -999
     }
     ## If DOY is missing we need to give to the model, although conifer shoot growth phenology is not implemented.
     if (pft == "evergreen" & any(is.na(DOY))) {
@@ -115,32 +117,33 @@ PRELES = function(PAR, TAir, VPD, Precip, CO2, fAPAR, ## REQUIRED
             p3=as.double(p[3]), 
             p4=as.double(p[4]), 
             p5=as.double(p[5]), 
-            p6=as.double(p[6]), ## START GPP PARAMETERS
-            p7=as.double(p[7]),
+            p6=as.double(p[6]), 
+            p7=as.double(p[7]),  ## START GPP PARAMETERS
             p8=as.double(p[8]),
             p9=as.double(p[9]),
             p10=as.double(p[10]),
             p11=as.double(p[11]), 
-            p12=as.double(p[12]), ## used for fW with ETmodel = 2 | 4 | 6
-            p13=as.double(p[13]), ## used for fW with ETmodel = 1 | 3 | 5
-            p14=as.double(p[14]), ## used for fW with ETmodel = 1 | 3 | 5)  ;
-            p15=as.double(p[15]), ## START ET PARAMETERS
-            p16=as.double(p[16]), 
+            p12=as.double(p[12]), 
+            p13=as.double(p[13]), ## used for fW with ETmodel = 2 | 4 | 6
+            p14=as.double(p[14]), ## used for fW with ETmodel = 1 | 3 | 5
+            p15=as.double(p[15]), ## used for fW with ETmodel = 1 | 3 | 5)  ;
+            p16=as.double(p[16]), ## START ET PARAMETERS
             p17=as.double(p[17]), 
-            p18=as.double(p[18]), ## used for fW with ETmodel = 2 | 4
-            p19=as.double(p[19]), ## used for fW with ETmodel = 1 | 3 
-            p20=as.double(p[20]), ## START WATER/SNOW PARAMETERS
-            p21=as.double(p[21]),
+            p18=as.double(p[18]), 
+            p19=as.double(p[19]), ## used for fW with ETmodel = 2 | 4
+            p20=as.double(p[20]), ## used for fW with ETmodel = 1 | 3 
+            p21=as.double(p[21]), ## START WATER/SNOW PARAMETERS
             p22=as.double(p[22]), 
             p23=as.double(p[23]), 
             p24=as.double(p[24]), 
             p25=as.double(p[25]), ## START INITIALISATION PARAMETERS // Soilw water at beginning
             p26=as.double(p[26]), ## Canopy water
             p27=as.double(p[27]), ## Snow on Ground 
-          p28=as.double(p[28]), ## State of temperature acclimation
+            p28=as.double(p[28]), ## State of temperature acclimation
             p29=as.double(p[29]),## Canopy water
             p30=as.double(p[30]), ## Snow on Ground 
             p31=as.double(p[31]),
+            p32=as.double(p[32]),
        ## State of temperature acclimation
           etmodel=as.integer(control), ## useMeasurement, int *LOGFLAG, int *multisiteNday, int *NofDays
             LOGFLAG=as.integer(LOGFLAG),

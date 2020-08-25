@@ -18,18 +18,20 @@ int K;
 int vectorlength;
 
 /* Site soil and other parameters, some in input, some calculated in code */
-typedef struct p1 {  
-  double soildepth; 
-  double ThetaFC;  
-  double ThetaPWP; 
-  double MinASWC;  
+typedef struct p1 {
+  double soildepth;
+  double ThetaFC;
+  double ThetaPWP;
+  /*double MinASWC;*/
+  double Reva;
+  double NdayW;  
   double tauDrainage;
 } p1 ;
 
-//  GPP model 
+//  GPP model
 typedef struct p2 {
-  double beta; 
-  double tau; 
+  double beta;
+  double tau;
   double S0;
   double Smax;
   double kappa;
@@ -40,42 +42,42 @@ typedef struct p2 {
   double t0; // Birch phenology parameters: 26th Feb = 57 DOY
   double tcrit; // (Linkosalo et al)           1.5 C
   double tsumcrit; //                                 134  C
-  
+
 } p2 ;
 
 // ET-model
 typedef struct p3 {
-  double beta; 
-  double kappa; 
+  double beta;
+  double kappa;
   double chi;
   double soilthres; // used for fW with ETmodel = 2 | 4
-  double nu; 
+  double nu;
 
 } p3 ;
 
-// Rain and Snow models: interception and melting of snow 
+// Rain and Snow models: interception and melting of snow
 typedef struct p4 {
-  double MeltCoef; 
+  double MeltCoef;
  // double Ifrac;
-  double I0; 
+  double I0;
   double CWmax;
   double SnowThreshold;
   double T_0;
-} p4; 
+} p4;
 
 // Storage components
 typedef struct p5 {
   double SW; // Soilw water at beginning
   double CW; // Canopy water
-  double SOG; // Snow on Ground 
+  double SOG; // Snow on Ground
   double S; // State of temperature acclimation
-} p5; 
+} p5;
 
 typedef struct p6 {
   double cvGPP; // Coefficients of variation for GPP, ET and SW
   double cvET;  // Used in MCMC-calibration only
-  double cvSW; 
-} p6; 
+  double cvSW;
+} p6;
 
 
 #ifdef	__cplusplus
@@ -88,4 +90,3 @@ extern "C" {
 #endif
 
 #endif	/* PRELESGLOBALS_H */
-

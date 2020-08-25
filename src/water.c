@@ -4,26 +4,28 @@
  * that uses GPP prediction to calculate transpiration, as driven
  * by VPD. Evaporation is estimated with PPFD, which is a surrogate
  * for Rnet */
-double ETfun(double D, double theta, double ppfd, double fAPAR, double T, 
+double ETfun(double D, double theta, double ppfd, double fAPAR, double T,
              p3 ET_par, p1 Site_par,
              double *canw,
              double *fE, double A,
-             double fWgpp,  p2 GPP_par,  //double fCO2mean, 
-	     double CO2, 
-	     FILE *flog, int LOGFLAG, int etmodel, double *transp, 
+             double fWgpp,  p2 GPP_par,  //double fCO2mean,
+	     double CO2,
+	     FILE *flog, int LOGFLAG, int etmodel, double *transp,
+       double ShallowAquifer,
 	     double *evap, double *fWE) {
 
   extern double fCO2_ET_model_mean(double CO2, p2 GPP_par );
 
   double pow();
-  double thetavol = theta/Site_par.soildepth; 
+  double thetavol = theta/Site_par.soildepth;
   double REW=(thetavol-Site_par.ThetaPWP)/
     (Site_par.ThetaFC-Site_par.ThetaPWP);
-  //  double fEsub = -999; /* Minimum of fW and fD returned if ET-model 
+  //  double fEsub = -999; /* Minimum of fW and fD returned if ET-model
   //			* flag indicates similar modifier as for GPP */
   double fWsub=1;
   //  double fDsub=1;
-  double  et; 
+  double  et;
+  double  MaxET;
   double fCO2mean;
   double lambda, psychom, s; //, rho;
   double cp = 1003.5; // J/(kg K) (nearly constant, this is dry air on sea level)
@@ -31,21 +33,21 @@ double ETfun(double D, double theta, double ppfd, double fAPAR, double T,
   // double R = 287.058; // J/(kg K) Specific gas constant for dry air, wiki
   // double zh, zm, d, zom, zoh;
   /*If pressure is not inputted use default */
-  double pressure = 101300; // Pa  
+  double pressure = 101300; // Pa
 
   fCO2mean = fCO2_ET_model_mean(CO2, GPP_par);
 
   // rho=pressure/(R * (T+273.15) ); // Dry air density, kg/m3
-  lambda = (-0.0000614342 * pow(T, 3) + 0.00158927 * pow(T, 2) - 
+  lambda = (-0.0000614342 * pow(T, 3) + 0.00158927 * pow(T, 2) -
 	    2.36418 * T +  2500.79) * 1000; // J/kg
   psychom= cp * pressure / (lambda* MWratio); // Pa/C, wiki
-  s = 1000 * 4098.0 * (0.6109 * exp((17.27 * T)/(T+237.3))) / 
+  s = 1000 * 4098.0 * (0.6109 * exp((17.27 * T)/(T+237.3))) /
     pow(T+237.3, 2);  // Pa/C! (Ice has nearly the same slope)
 
 
   /* Calculate soil constraint, simple linear following Granier 1987*/
   if (ET_par.soilthres < -998) { /*-999 omits water control*/
-    fWsub = 1; 
+    fWsub = 1;
   } else {
     if (REW < ET_par.soilthres) {
       if (REW > 0.01) fWsub = REW/ET_par.soilthres; else fWsub = 0.0;
@@ -54,28 +56,30 @@ double ETfun(double D, double theta, double ppfd, double fAPAR, double T,
     }
   }
 
-  
+
   /* If there is any water in canopy, evaporation is not reduced by
    * low soil water */
   if (*canw > 0.00000001) fWsub = 1;
 
-  //  if (fDsub > fWsub) fEsub=fWsub; else fEsub = fDsub;     
-  
-  *fE = fWsub;   
+  //  if (fDsub > fWsub) fEsub=fWsub; else fEsub = fDsub;
+
+  *fE = fWsub;
   *fWE = fWsub;
 
   if (D < 0.01) D=0.01;
 
   if (LOGFLAG > 1.5)
-    fprintf(flog, "   ETfun(): CO2mean=%lf\tat CO2=%lf\n", 
+    fprintf(flog, "   ETfun(): CO2mean=%lf\tat CO2=%lf\n",
 	    fCO2mean, CO2);
-  
+
   if (etmodel == -1) {
     *transp = D * ET_par.beta*A/pow(D, ET_par.kappa) *
       pow(fWgpp, ET_par.nu) * // ET differently sensitive to soil water than GPP
       fCO2mean;
     *evap = ET_par.chi *  (1-fAPAR) *  fWsub * ppfd;
-    et = (*transp + *evap) * s / (s + psychom); 
+    MaxET=(D * ET_par.beta*A/pow(D, ET_par.kappa) * fCO2mean +
+     ET_par.chi *  (1-fAPAR) * ppfd) * s / (s + psychom);
+    et = (*transp + *evap) * s / (s + psychom) + Site_par.Reva* ShallowAquifer * MaxET;
   }
 
   if (etmodel == 0) {
@@ -83,48 +87,53 @@ double ETfun(double D, double theta, double ppfd, double fAPAR, double T,
       pow(fWgpp, ET_par.nu) * // ET differently sensitive to soil water than GPP
       fCO2mean;
     *evap = ET_par.chi *  s / (s + psychom) * (1-fAPAR) *  fWsub * ppfd;
+    MaxET=D * ET_par.beta*A/pow(D, ET_par.kappa) * fCO2mean + ET_par.chi *  s / (s + psychom) * (1-fAPAR) * ppfd;
     //    et = D * ET_par.beta*A/pow(D, ET_par.kappa) *
     //  pow(fWgpp, ET_par.nu) * // ET differently sensitive to soil water than GPP
     //  fCO2mean +  // Mean effect of CO2 on transpiration
     //  ET_par.chi *  s / (s + psychom) * (1-fAPAR) *  fWsub * ppfd;
-    et = *transp + *evap;
+    et = *transp + *evap + Site_par.Reva*ShallowAquifer*MaxET;
   }
   if (etmodel == 1) {
     *transp = D * ET_par.beta*A/pow(D, ET_par.kappa) *
       pow(fWgpp, ET_par.nu) * // ET differently sensitive to soil water than GPP
       fCO2mean;
     *evap = ET_par.chi * (1-fAPAR) *  fWsub * ppfd;
+    MaxET=D * ET_par.beta*A/pow(D, ET_par.kappa)  * fCO2mean + ET_par.chi * (1-fAPAR) * ppfd;
     //et = D * ET_par.beta*A/pow(D, ET_par.kappa) *
     //  pow(fWgpp, ET_par.nu) * // ET differently sensitive to soil water than GPP
     //  fCO2mean +  // Mean effect of CO2 on transpiration
     //  ET_par.chi * (1-fAPAR) *  fWsub * ppfd;
-    et = *transp + *evap;
+    et = *transp + *evap + Site_par.Reva * ShallowAquifer * MaxET;
   }
   if (etmodel == 2) {
-      et = D * (1 + ET_par.beta/pow(D, ET_par.kappa)) * A / CO2 * 
+    MaxET= D * (1 + ET_par.beta/pow(D, ET_par.kappa)) * A / CO2 *
+	fCO2mean +  // Mean effect of CO2 on transpiration
+	ET_par.chi * (1-fAPAR) * ppfd;
+    et = D * (1 + ET_par.beta/pow(D, ET_par.kappa)) * A / CO2 *
 	pow(fWgpp, ET_par.nu) * // ET differently sensitive to soil water than GPP
-	fCO2mean +  // Mean effect of CO2 on transpiration      
-	ET_par.chi * (1-fAPAR) *  fWsub * ppfd;
+	fCO2mean +  // Mean effect of CO2 on transpiration
+	ET_par.chi * (1-fAPAR) *  fWsub * ppfd + Site_par.Reva * ShallowAquifer * MaxET;
     }
 
   if (LOGFLAG > 2.5)
-    fprintf(flog, "      ETfun(): Model=%d\nD\t%lf\nET_par.beta\t%lf\nA\t%lf\npow(D, ET_par.kappa)\t%lf\npow(fWgpp, ET_par.nu)\t%lf\nfWgpp\t%lf\nET_par.nu\t%lf\nfCO2mean\t%lf\nCO2\t%lf\nET_par.chi\t%lf\ns/(s+psychom)\t%lf\n1-fAPAR\t%lf\nfWsum\t%lf\nppfd\t%lf\n-->et\t%lf\n",	    
-	    etmodel, D, ET_par.beta, A, pow(D, ET_par.kappa), 
+    fprintf(flog, "      ETfun(): Model=%d\nD\t%lf\nET_par.beta\t%lf\nA\t%lf\npow(D, ET_par.kappa)\t%lf\npow(fWgpp, ET_par.nu)\t%lf\nfWgpp\t%lf\nET_par.nu\t%lf\nfCO2mean\t%lf\nCO2\t%lf\nET_par.chi\t%lf\ns/(s+psychom)\t%lf\n1-fAPAR\t%lf\nfWsum\t%lf\nppfd\t%lf\n-->et\t%lf\n",
+	    etmodel, D, ET_par.beta, A, pow(D, ET_par.kappa),
 	    pow(fWgpp, ET_par.nu), fWgpp, ET_par.nu,
-	    fCO2mean, 
+	    fCO2mean,
 	    CO2,
 	    ET_par.chi ,   s / (s + psychom), 1-fAPAR, fWsub,  ppfd, et);
 
-  
+
   return(et);
 }
 
 
 /*Interception is a fraction of daily rainfall, fraction depending on fAPAR*/
-void  interceptionfun(double *rain, double *intercepted, double Temp, p4 
+void  interceptionfun(double *rain, double *intercepted, double Temp, p4
 		       SnowRain_par, double fAPAR) {
   if (Temp > SnowRain_par.SnowThreshold)  {
-    *intercepted = *rain * (SnowRain_par.I0 * fAPAR / 0.75); 
+    *intercepted = *rain * (SnowRain_par.I0 * fAPAR / 0.75);
     *rain = *rain - *intercepted;
   } else {
     *intercepted = 0;
@@ -136,31 +145,31 @@ void  interceptionfun(double *rain, double *intercepted, double Temp, p4
 
 /* Soil water balance is updated with snowmelt and canopy throughfall
  * and evapotranspiration. No drainage occurs below field capacity */
-void swbalance(double *theta, double throughfall, double snowmelt, double et, 
+void swbalance(double *theta, double throughfall, double snowmelt, double et,
                p1 sitepar, double *drainage,
 	       double *snow, double *canw, p4 SnowRain_par) {
    double st0, etfromvegandsoil=0;
 
   /* Evaporate first from wet canopy and snow on ground */
 
-  if (SnowRain_par.CWmax > 0.00000001) { 
-    if ( (*canw + *snow - et) > 0 ) {             
-      if ( (*canw - et) > 0 ) { 
+  if (SnowRain_par.CWmax > 0.00000001) {
+    if ( (*canw + *snow - et) > 0 ) {
+      if ( (*canw - et) > 0 ) {
 	*canw = *canw -et;
 	etfromvegandsoil = 0;
       } else if (*canw - et < 0) { // in this case, there's enough snow left
 	*snow = *snow + *canw - et;
 	*canw = 0;
 	etfromvegandsoil = 0;
-      }    
+      }
     } else {
       etfromvegandsoil = et - *canw - *snow;
       *canw=0.0;
       *snow = 0.0;
     }
 
-  } else {  
-    if ( (*snow - et) > 0 ) {             
+  } else {
+    if ( (*snow - et) > 0 ) {
       *snow = *snow - et;
       etfromvegandsoil = 0;
     } else if (*snow - et < 0) { // in this case, there's enough snow left
@@ -175,21 +184,21 @@ void swbalance(double *theta, double throughfall, double snowmelt, double et,
 
   /* Water balance without drainage */
   st0 = *theta + throughfall + snowmelt  - et;
-  if (sitepar.MinASWC>0.0001){
+  /*if (sitepar.MinASWC>0.0001){
     if (st0 <= sitepar.soildepth*(sitepar.MinASWC +sitepar.ThetaPWP)) st0 = sitepar.soildepth*(sitepar.MinASWC+sitepar.ThetaPWP);
   }else{
     if (st0 <= 0) st0 = 0.0001;
-  }
+  }*/
 
 
   /* Calculate what is left to drainage after partial balance update above: */
-  if (sitepar.tauDrainage > 0) {  
+  if (sitepar.tauDrainage > 0) {
 
 
     // Simple time delay drainage above FC:
-    if (st0 > sitepar.ThetaFC * sitepar.soildepth) { 
-      *drainage = (st0 - sitepar.ThetaFC * sitepar.soildepth) / 
-	sitepar.tauDrainage;      
+    if (st0 > sitepar.ThetaFC * sitepar.soildepth) {
+      *drainage = (st0 - sitepar.ThetaFC * sitepar.soildepth) /
+	sitepar.tauDrainage;
     } else {
       *drainage = 0;
     }
@@ -201,23 +210,23 @@ void swbalance(double *theta, double throughfall, double snowmelt, double et,
      * was practically zero, but important for convergence */
     /*
 if (st0 > sitepar.ThetaFC * sitepar.soildepth) {
-      *drainage = (st0 - sitepar.ThetaFC * sitepar.soildepth) / 
-	sitepar.tauDrainage;      
+      *drainage = (st0 - sitepar.ThetaFC * sitepar.soildepth) /
+	sitepar.tauDrainage;
     }
-    if (*drainage < (sitepar.ThetaFC * sitepar.soildepth - 
-		     sitepar.ThetaPWP * sitepar.soildepth) / 
-	10000) //pow(sitepar.tauDrainage, 5)) 
-	*drainage = (sitepar.ThetaFC * sitepar.soildepth - 
-		     sitepar.ThetaPWP * sitepar.soildepth) / 
+    if (*drainage < (sitepar.ThetaFC * sitepar.soildepth -
+		     sitepar.ThetaPWP * sitepar.soildepth) /
+	10000) //pow(sitepar.tauDrainage, 5))
+	*drainage = (sitepar.ThetaFC * sitepar.soildepth -
+		     sitepar.ThetaPWP * sitepar.soildepth) /
 	  10000; //pow(sitepar.tauDrainage, 5);
-    
-    if (st0 <= sitepar.ThetaFC * sitepar.soildepth && 
-	st0 > sitepar.ThetaPWP * sitepar.soildepth) { 
-      *drainage = (st0 - sitepar.ThetaPWP * sitepar.soildepth) / 
-	10000; //pow(sitepar.tauDrainage, 5);      
+
+    if (st0 <= sitepar.ThetaFC * sitepar.soildepth &&
+	st0 > sitepar.ThetaPWP * sitepar.soildepth) {
+      *drainage = (st0 - sitepar.ThetaPWP * sitepar.soildepth) /
+	10000; //pow(sitepar.tauDrainage, 5);
       *theta = st0 - *drainage;
     }
-  
+
     if (st0 <= sitepar.ThetaPWP * sitepar.soildepth) {
       *drainage = 0;
       *theta = st0;
@@ -225,32 +234,32 @@ if (st0 > sitepar.ThetaFC * sitepar.soildepth) {
     *theta = st0 - *drainage;
     */
     //****************************************************** */
-      
 
-  } 
-  
+
+  }
+
 }
 
 
 /* Rain is snow below T > 0 C, and snow melts above O C. */
-void  Snow(double T, double *rain, double *snow, p4 SnowRain_par, 
+void  Snow(double T, double *rain, double *snow, p4 SnowRain_par,
 	   double *SnowMelt) {
-  double NewSnow; 
+  double NewSnow;
   if (T < SnowRain_par.SnowThreshold) {
-    NewSnow=*rain; 
-    *rain = 0; 
+    NewSnow=*rain;
+    *rain = 0;
   } else {
     NewSnow=0;
-  } 
-  
-  if (T > SnowRain_par.T_0) 
-    *SnowMelt = SnowRain_par.MeltCoef*(T-SnowRain_par.T_0);  
+  }
+
+  if (T > SnowRain_par.T_0)
+    *SnowMelt = SnowRain_par.MeltCoef*(T-SnowRain_par.T_0);
   else *SnowMelt=0;
-  
+
   if (*snow + NewSnow - *SnowMelt < 0) {
     *SnowMelt=NewSnow + *snow;
     *snow =0;
   } else {
     *snow = *snow + NewSnow - *SnowMelt;
   }
-};  
+};
