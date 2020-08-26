@@ -12,7 +12,7 @@ double ETfun(double D, double theta, double ppfd, double fAPAR, double T,
 	     double CO2,
 	     FILE *flog, int LOGFLAG, int etmodel, double *transp,
        double ShallowAquifer,
-	     double *evap, double *fWE) {
+	     double *evap, double *fWE, double *EtReva) {
 
   extern double fCO2_ET_model_mean(double CO2, p2 GPP_par );
 
@@ -79,7 +79,8 @@ double ETfun(double D, double theta, double ppfd, double fAPAR, double T,
     *evap = ET_par.chi *  (1-fAPAR) *  fWsub * ppfd;
     MaxET=(D * ET_par.beta*A/pow(D, ET_par.kappa) * fCO2mean +
      ET_par.chi *  (1-fAPAR) * ppfd) * s / (s + psychom);
-    et = (*transp + *evap) * s / (s + psychom) + Site_par.Reva* ShallowAquifer * MaxET;
+     *EtReva=Site_par.Reva* ShallowAquifer * MaxET;
+    et = (*transp + *evap) * s / (s + psychom) + *EtReva;
   }
 
   if (etmodel == 0) {
@@ -92,7 +93,8 @@ double ETfun(double D, double theta, double ppfd, double fAPAR, double T,
     //  pow(fWgpp, ET_par.nu) * // ET differently sensitive to soil water than GPP
     //  fCO2mean +  // Mean effect of CO2 on transpiration
     //  ET_par.chi *  s / (s + psychom) * (1-fAPAR) *  fWsub * ppfd;
-    et = *transp + *evap + Site_par.Reva*ShallowAquifer*MaxET;
+    *EtReva=Site_par.Reva*ShallowAquifer*MaxET;
+    et = *transp + *evap + *EtReva;
   }
   if (etmodel == 1) {
     *transp = D * ET_par.beta*A/pow(D, ET_par.kappa) *
@@ -104,7 +106,8 @@ double ETfun(double D, double theta, double ppfd, double fAPAR, double T,
     //  pow(fWgpp, ET_par.nu) * // ET differently sensitive to soil water than GPP
     //  fCO2mean +  // Mean effect of CO2 on transpiration
     //  ET_par.chi * (1-fAPAR) *  fWsub * ppfd;
-    et = *transp + *evap + Site_par.Reva * ShallowAquifer * MaxET;
+    *EtReva=Site_par.Reva * ShallowAquifer * MaxET;
+    et = *transp + *evap + *EtReva;
   }
   if (etmodel == 2) {
     MaxET= D * (1 + ET_par.beta/pow(D, ET_par.kappa)) * A / CO2 *
@@ -145,7 +148,7 @@ void  interceptionfun(double *rain, double *intercepted, double Temp, p4
 
 /* Soil water balance is updated with snowmelt and canopy throughfall
  * and evapotranspiration. No drainage occurs below field capacity */
-void swbalance(double *theta, double throughfall, double snowmelt, double et,
+void swbalance(double *theta, double throughfall, double snowmelt, double et, double *EtReva,
                p1 sitepar, double *drainage,
 	       double *snow, double *canw, p4 SnowRain_par) {
    double st0, etfromvegandsoil=0;
@@ -183,7 +186,7 @@ void swbalance(double *theta, double throughfall, double snowmelt, double et,
   et = etfromvegandsoil;
 
   /* Water balance without drainage */
-  st0 = *theta + throughfall + snowmelt  - et;
+  st0 = *theta + throughfall + snowmelt  - et + *EtReva;
   /*if (sitepar.MinASWC>0.0001){
     if (st0 <= sitepar.soildepth*(sitepar.MinASWC +sitepar.ThetaPWP)) st0 = sitepar.soildepth*(sitepar.MinASWC+sitepar.ThetaPWP);
   }else{

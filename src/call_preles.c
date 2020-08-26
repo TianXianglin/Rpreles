@@ -68,6 +68,7 @@ void call_preles(// INPUTS
 		 /*double *MinASWC,*/
 		 double *Reva,
 		 double *NdayW,
+		 double *WTbase,
 		 double *tauDrainage,
 		 double *beta, // START GPP PARAMETERS
 		 double *tau,
@@ -129,6 +130,7 @@ void call_preles(// INPUTS
   /*parSite.MinASWC = *MinASWC;*/
 	parSite.Reva = *Reva;
 	parSite.NdayW = *NdayW;
+	parSite.WTbase = *WTbase;
   parSite.tauDrainage = *tauDrainage;
   parGPP.beta = *beta;
   parGPP.tau = *tau;

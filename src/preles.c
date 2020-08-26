@@ -38,12 +38,12 @@ int preles(int NofDays,
 		      FILE *flog, int LOGFLAG, int etmodel,
 		      double *transp,
 					double ShallowAquifer,
-		      double *evap, double *fWE);
+		      double *evap, double *fWE, double *EtReva);
 
   extern void  interceptionfun(double *rain, double *intercepted, double Temp, p4
 			       SnowRain_par, double fAPAR);
   extern void swbalance(double *theta, double throughfall,
-			double snowmelt, double et,
+			double snowmelt, double et,double *EtReva,
 			p1 sitepar, double *drainage,
 			double *snow, double *canw, p4 SnowRain_par);
   extern void  Snow(double T, double *rain, double *snow, p4 SnowRain_par,
@@ -76,6 +76,7 @@ int preles(int NofDays,
 	double ShallowAquifer=0;
   double PhenoS=0;
   double fPheno=0;
+	double *EtReva;
   int i;
 	int k;
   double fEgpp = 0;
@@ -208,17 +209,16 @@ int preles(int NofDays,
 
 				if (i<2) {ShallowAquifer=0;}
 				else if (Site_par.NdayW >= i){
-				for (k=1; k < i; k++) {sum = sum+Precip[k]-ET[k];}
+				for (k=1; k < i; k++) {sum = sum+Site_par.WTbase+Precip[k]-ET[k];}
 				ShallowAquifer=sum/i;
-		}
-			else {
-				for (k=i-Site_par.NdayW; k < i-1; k++) {sum = sum+Precip[k]-ET[k];}
+		    } 	else {
+				for (k=i-Site_par.NdayW; k < i-1; k++) {sum = sum+Site_par.WTbase+Precip[k]-ET[k];}
 				ShallowAquifer=sum/Site_par.NdayW;
 			}
 
-			/*if (ShallowAquifer<0) {
+			if (ShallowAquifer<0) {
 				ShallowAquifer=0;
-			}*/
+			}
 
 		ET[i] = ETfun(D, theta, I, fAPAR[i], T,
 		  ET_par, Site_par,
@@ -231,7 +231,7 @@ int preles(int NofDays,
 		  flog, LOGFLAG, etmodel,
 			&transp[i],
 			ShallowAquifer,
-		  &evap[i], &fWE[i]);
+		  &evap[i], &fWE[i], &EtReva);
 
     if (LOGFLAG > 1.5)
       fprintf(flog,
@@ -242,7 +242,7 @@ int preles(int NofDays,
          end of the day, as well as update snow and canopy water with et */
 
     //    swbalance(&theta, Throughfall[i], Snowmelt[i], ET[i],
-    swbalance(&theta, Throughfall[i], Snowmelt[i], ET[i],
+    swbalance(&theta, Throughfall[i], Snowmelt[i], ET[i], &EtReva,
 	      Site_par, &Drainage[i], //&Psi[i], &Ks[i],
 	      &theta_snow, &theta_canopy, SnowRain_par);
 

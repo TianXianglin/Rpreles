@@ -1,7 +1,7 @@
 #include "prelesglobals.h"
 
 /* Replace missing first day values with something reasoble if missing */
-void initConditions(double **PAR, double **TAir, double **VPD, double **Precip, 
+void initConditions(double **PAR, double **TAir, double **VPD, double **Precip,
                     double **CO2) {
   /* if first day value is missing assume we're somewhere on the boreal
    * zone (lat > 60 deg) */

@@ -24,7 +24,8 @@ typedef struct p1 {
   double ThetaPWP;
   /*double MinASWC;*/
   double Reva;
-  double NdayW;  
+  double NdayW;
+  double WTbase;
   double tauDrainage;
 } p1 ;
 

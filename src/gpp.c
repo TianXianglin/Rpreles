@@ -2,22 +2,22 @@
 
 /* Seasonality model of Mäkelä et al 2004 */
 double fS_model(double *S, double T, p2 GPP_par) {
-  double fS; 
-  
+  double fS;
+
   *S = *S + (T-*S)/GPP_par.tau;
   if (0 > *S-GPP_par.S0) fS=0; else fS= *S-GPP_par.S0;
   if (1 < fS/GPP_par.Smax) fS=1; else fS=fS/GPP_par.Smax;
-  
+
   return(fS);
 };
 
 
-double fPheno_model(p2 GPP_par, double T, double *PhenoS, 
+double fPheno_model(p2 GPP_par, double T, double *PhenoS,
 		    int DOY, double fS) {
-  double m; 
+  double m;
   double fPheno=0;
 
-  if (GPP_par.t0 > -998) { // ie not -999 
+  if (GPP_par.t0 > -998) { // ie not -999
     /* Budbreak must occur between specified min. date and end of July */
     if ( (DOY > (GPP_par.t0 - 0.5)) & (DOY < 213) )  {
       m = (T - GPP_par.tcrit);
@@ -26,24 +26,24 @@ double fPheno_model(p2 GPP_par, double T, double *PhenoS,
     } else {
       *PhenoS = 0;
     }
-    
+
     if (*PhenoS > GPP_par.tsumcrit - 0.005) fPheno = 1; else fPheno = 0;
-    /* Quick solution to leaf out: 
-     * After end of July we just apply season prediction based on conifer fS 
+    /* Quick solution to leaf out:
+     * After end of July we just apply season prediction based on conifer fS
      *  for gradual leaf out. Assume leaves drop much faster that fS.
      *  ...essentially this should be light driven process...i think. */
     if (DOY > 212) {
 	fPheno = fS * fS;
       if (fPheno < 0.5) {
 	fPheno = 0;
-      } 
+      }
     }
-    
+
     /* If there is no t0 parameter, it is an evergreen */
   } else {
     fPheno = 1;
   }
-  
+
   return(fPheno);
 };
 
@@ -87,9 +87,9 @@ double fCO2_ET_model_mean(double CO2, p2 GPP_par ) {
 
 
 /* GPP model, modified from Mäkelä et al 2008 */
-void GPPfun(double *gpp, double *gpp380, 
-	      double ppfd,  double D, double CO2, double theta, 
-	      double fAPAR, double fSsub, 
+void GPPfun(double *gpp, double *gpp380,
+	      double ppfd,  double D, double CO2, double theta,
+	      double fAPAR, double fSsub,
               p2 GPP_par, p1 Site_par, double *fD, double *fW,
 	      double *fE, FILE *flog, int LOGFLAG) {
 
@@ -107,7 +107,7 @@ void GPPfun(double *gpp, double *gpp380,
     fDsub = exp(GPP_par.kappa * D);
     fDsub = fDsub > 1 ? 1 : fDsub;
 
-    if (GPP_par.soilthres < -998) { 
+    if (GPP_par.soilthres < -998) {
       fWsub = 1.0;      /* e.g. -999 means no water control of GPP*/
     } else {
       if (REW < GPP_par.soilthres) {
@@ -127,9 +127,9 @@ void GPPfun(double *gpp, double *gpp380,
     fCO2 = fCO2_model_mean(CO2, GPP_par);
     *gpp = *gpp380 * fCO2;
 
-    
-    if (LOGFLAG > 1.5) 
-      fprintf(flog, 
+
+    if (LOGFLAG > 1.5)
+      fprintf(flog,
 	      "   gpp(): Modifiers: fAPAR %lf\tfSsub %lf\t fLsub %lf\t fDsub %lf\t fWsub %lf\tfEsub %lf\t fCO2 %lf\n                    gpp380 %lf\t gpp %lf\n",
 	      fAPAR, fSsub, fLsub, fDsub, fWsub, fEsub, fCO2, *gpp380, *gpp);
 
@@ -137,21 +137,21 @@ void GPPfun(double *gpp, double *gpp380,
 
     /* This has been removed, and simpler multiplicative CO2 modifier to gpp380 is used.
     * CO2 effect not only influences fD but also fW, due to stomatal action
-    
+
     fDCO2sub = fDsub * pow(exp(-0.4 * D),
 			   fCO2_VPD_exponent(CO2, GPP_par.xCO2)) / exp(-0.4 * D) ;
     fWCO2sub = fWsub * pow(fWsub, fCO2_VPD_exponent(CO2, GPP_par.xCO2));
 
-    if (LOGFLAG > 1.5) 
-      fprintf(flog, 
-	      "   gpp(): Modifier values for GPP at %lf\n      fD=%lf\tfW=%lf\tfCO2mean=%lf\n", 
+    if (LOGFLAG > 1.5)
+      fprintf(flog,
+	      "   gpp(): Modifier values for GPP at %lf\n      fD=%lf\tfW=%lf\tfCO2mean=%lf\n",
 	      CO2, fDCO2sub, fWCO2sub, fCO2_model_mean(CO2, GPP_par.bCO2));
-    
+
     if (fDCO2sub > fWCO2sub) fECO2sub=fWCO2sub; else fECO2sub = fDCO2sub;
-    
+
     *fECO2 = fECO2sub;
-    
-    *gpp = GPP_par.beta *  ppfd *  fAPAR * fSsub * fLsub  * fECO2sub * 
+
+    *gpp = GPP_par.beta *  ppfd *  fAPAR * fSsub * fLsub  * fECO2sub *
       fCO2_model_mean(CO2, GPP_par.bCO2);
 */
 
